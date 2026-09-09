@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     expose_verification_token_in_response: bool = False
     media_root: str = "uploads"
     max_upload_size_bytes: int = 5_242_880
+    cors_origins: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
