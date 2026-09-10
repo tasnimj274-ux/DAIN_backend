@@ -1,9 +1,13 @@
 from fastapi import FastAPI
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+
 from app.db.session import check_database_connection
+
 from app.routes.auth import router as auth_router
+
 from app.routes.dain import router as dain_router
 
 
@@ -30,7 +34,16 @@ app.add_middleware(
 
 
 app.include_router(auth_router)
+
 app.include_router(dain_router)
+
+
+@app.get("/", tags=["system"])
+def root() -> dict[str, str]:
+    return {
+        "message": "DAIN backend is running",
+        "status": "ok",
+    }
 
 
 @app.get("/health", tags=["system"])

@@ -1,6 +1,7 @@
 """Registration, institutional verification, login, and protected-account routes."""
 
 import uuid
+from app.services.email import send_verification_email
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -109,6 +110,11 @@ def register(payload: RegistrationRequest, database: Session = Depends(get_db)) 
     database.add(user)
     database.flush()
     raw_token = _issue_verification_token(database, user)
+    if not (
+    settings.debug
+    and settings.expose_verification_token_in_response
+    ):
+        send_verification_email(email, raw_token)
     _audit(database, user.id, "auth.registered", "user", user.id)
     database.commit()
     database.refresh(user)
@@ -135,16 +141,41 @@ def verify_email(payload: EmailVerificationRequest, database: Session = Depends(
     return MessageResponse(message="Institutional email verified. You may now log in.")
 
 
-@router.post("/resend-verification", response_model=MessageResponse, status_code=status.HTTP_202_ACCEPTED)
-def resend_verification(payload: ResendVerificationRequest, database: Session = Depends(get_db)) -> MessageResponse:
+@router.post(
+    "/resend-verification",
+    response_model=MessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def resend_verification(
+    payload: ResendVerificationRequest,
+    database: Session = Depends(get_db),
+) -> MessageResponse:
     """Issue a replacement token without revealing whether an account exists."""
     email = str(payload.email).lower()
     user = database.scalar(select(User).where(User.email == email))
+
     if user is not None and not user.is_email_verified and user.is_active:
-        _issue_verification_token(database, user)
-        _audit(database, user.id, "auth.verification_resent", "user", user.id)
-        database.commit()
-    return MessageResponse(message="If an eligible unverified account exists, a verification message will be sent.")
+        raw_token = _issue_verification_token(database, user)
+
+        if not (
+            settings.debug
+            and settings.expose_verification_token_in_response
+        ):
+            send_verification_email(email, raw_token)
+
+        _audit(
+            database,
+            user.id,
+            "auth.verification_resent",
+            "user",
+            user.id,
+        )
+
+    database.commit()
+
+    return MessageResponse(
+        message="If an eligible unverified account exists, a verification message will be sent."
+    )
 
 
 @router.post("/login", response_model=TokenResponse)

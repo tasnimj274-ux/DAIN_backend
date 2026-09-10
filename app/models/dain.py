@@ -68,7 +68,10 @@ class User(Base):
 
     verification_tokens: Mapped[list["EmailVerificationToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     sessions: Mapped[list["AuthSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    submissions: Mapped[list["Submission"]] = relationship(back_populates="author")
+    submissions: Mapped[list["Submission"]] = relationship(
+    back_populates="author",
+    foreign_keys="Submission.author_id",
+    )
     uploaded_assets: Mapped[list["MediaAsset"]] = relationship(back_populates="uploaded_by")
     reviews: Mapped[list["Review"]] = relationship(back_populates="reviewer")
     audit_entries: Mapped[list["AuditLog"]] = relationship(back_populates="actor")
@@ -149,28 +152,122 @@ class Submission(Base):
 
     __tablename__ = "submissions"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("achievement_categories.id"), index=True)
-    title: Mapped[str] = mapped_column(String(250), index=True)
-    summary: Mapped[str] = mapped_column(Text)
-    achievement_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    organization: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    status: Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus, name="submission_status"), default=SubmissionStatus.DRAFT, index=True)
-    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+    )
 
-    author: Mapped["User"] = relationship(back_populates="submissions")
-    category: Mapped["AchievementCategory"] = relationship(back_populates="submissions")
-    field_values: Mapped[list["SubmissionFieldValue"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
-    media_assets: Mapped[list["MediaAsset"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
-    media_links: Mapped[list["MediaLink"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
-    reviews: Mapped[list["Review"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
-    validation_results: Mapped[list["ValidationResult"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
-    duplicate_sources: Mapped[list["DuplicateMatch"]] = relationship(back_populates="source_submission", foreign_keys="DuplicateMatch.source_submission_id")
-    duplicate_candidates: Mapped[list["DuplicateMatch"]] = relationship(back_populates="candidate_submission", foreign_keys="DuplicateMatch.candidate_submission_id")
-    media_package: Mapped["MediaPackage | None"] = relationship(back_populates="submission", cascade="all, delete-orphan")
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"),
+        index=True,
+    )
+
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("achievement_categories.id"),
+        index=True,
+    )
+
+    assigned_editor_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+
+    review_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    title: Mapped[str] = mapped_column(
+        String(250),
+        index=True,
+    )
+
+    summary: Mapped[str] = mapped_column(Text)
+
+    achievement_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    organization: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    status: Mapped[SubmissionStatus] = mapped_column(
+        Enum(
+            SubmissionStatus,
+            name="submission_status",
+        ),
+        default=SubmissionStatus.DRAFT,
+        index=True,
+    )
+
+    submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    author: Mapped["User"] = relationship(
+    back_populates="submissions",
+    foreign_keys=[author_id],
+    )
+
+    category: Mapped["AchievementCategory"] = relationship(
+        back_populates="submissions"
+    )
+
+    field_values: Mapped[list["SubmissionFieldValue"]] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+    media_assets: Mapped[list["MediaAsset"]] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+    media_links: Mapped[list["MediaLink"]] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+    reviews: Mapped[list["Review"]] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+    validation_results: Mapped[list["ValidationResult"]] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+    duplicate_sources: Mapped[list["DuplicateMatch"]] = relationship(
+        back_populates="source_submission",
+        foreign_keys="DuplicateMatch.source_submission_id",
+    )
+
+    duplicate_candidates: Mapped[list["DuplicateMatch"]] = relationship(
+        back_populates="candidate_submission",
+        foreign_keys="DuplicateMatch.candidate_submission_id",
+    )
+
+    media_package: Mapped["MediaPackage | None"] = relationship(
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
 
 
 class SubmissionFieldValue(Base):
@@ -278,17 +375,55 @@ class MediaPackage(Base):
     __tablename__ = "media_packages"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"), unique=True)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    status: Mapped[MediaPackageStatus] = mapped_column(Enum(MediaPackageStatus, name="media_package_status"), default=MediaPackageStatus.PENDING)
-    public_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    storage_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    rendered_content: Mapped[str | None] = mapped_column(Text, nullable=True)
-    generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    submission_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("submissions.id"),
+        unique=True,
+    )
+    slug: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+    )
+    status: Mapped[MediaPackageStatus] = mapped_column(
+        Enum(MediaPackageStatus, name="media_package_status"),
+        default=MediaPackageStatus.PENDING,
+    )
 
-    submission: Mapped["Submission"] = relationship(back_populates="media_package")
+    is_published: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    public_url: Mapped[str | None] = mapped_column(
+        String(2048),
+        nullable=True,
+    )
+    storage_key: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+    )
+    rendered_content: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    submission: Mapped["Submission"] = relationship(
+        back_populates="media_package"
+    )
 
 
 class AuditLog(Base):

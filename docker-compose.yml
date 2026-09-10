@@ -8,7 +8,7 @@ services:
         condition: service_started
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql+psycopg://dain_user:DAIN_Local_2026_StrongPass@db:5432/dain
+      DATABASE_URL: "postgresql+psycopg://dain_user:DainDB_2026!StrongPass@db:5432/dain"
       DEBUG: "true"
       INSTITUTIONAL_EMAIL_DOMAIN: du.ac.bd
       EXPOSE_VERIFICATION_TOKEN_IN_RESPONSE: "true"
@@ -22,7 +22,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: dain
-      POSTGRES_PASSWORD: DAIN_Local_2026_StrongPass
+      POSTGRES_PASSWORD: DainDB_2026!StrongPass
       POSTGRES_USER: dain_user
     volumes:
       - postgres_data:/var/lib/postgresql/data

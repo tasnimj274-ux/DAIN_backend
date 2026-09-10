@@ -70,6 +70,21 @@ class SubmissionCreateRequest(BaseModel):
         return value.strip()
 
 
+class SubmissionUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=3, max_length=250)
+    summary: str | None = Field(default=None, min_length=20, max_length=10_000)
+    achievement_date: date | None = None
+    organization: str | None = Field(default=None, max_length=200)
+    field_values: list[SubmissionFieldValueInput] | None = None
+
+    @field_validator("title", "summary")
+    @classmethod
+    def text_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("Value must not be blank.")
+        return value.strip() if value is not None else None        
+
+
 class SubmissionFieldValueResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
