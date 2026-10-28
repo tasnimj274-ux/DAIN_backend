@@ -4,20 +4,19 @@ from app.core.config import settings
 
 
 class InstitutionalEmailVerificationPrototype:
-    """Prototype verifier based on domain ownership and a one-time email token.
+    """Validate university email domains, including department subdomains."""
 
-    This is not DUNITE SSO. A real DUNITE provider can replace this class while
-    the auth routes continue to use the same verification-token workflow.
-    """
+    def accepts(self, email: str) -> bool:
+        domain = email.rsplit("@", 1)[-1].strip().lower()
+        institutional_domain = (
+            settings.institutional_email_domain.strip().lower()
+        )
 
-   def accepts(self, email: str) -> bool:
-    domain = email.rsplit("@", 1)[-1].strip().lower()
-    institutional_domain = settings.institutional_email_domain.strip().lower()
-
-    return (
-        domain == institutional_domain
-        or domain.endswith(f".{institutional_domain}")
-    )
+        return (
+            domain == institutional_domain
+            or domain.endswith(f".{institutional_domain}")
+        )
 
 
 institutional_verifier = InstitutionalEmailVerificationPrototype()
+
