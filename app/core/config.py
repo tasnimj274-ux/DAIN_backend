@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
     email_from: str | None = None
+    brevo_api_key: str | None = None
     smtp_use_ssl: bool = False
     verification_token_ttl_minutes: int = 60
     session_token_ttl_minutes: int = 1440
