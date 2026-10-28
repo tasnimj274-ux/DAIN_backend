@@ -10,9 +10,14 @@ class InstitutionalEmailVerificationPrototype:
     the auth routes continue to use the same verification-token workflow.
     """
 
-    def accepts(self, email: str) -> bool:
-        domain = email.rsplit("@", 1)[-1].lower()
-        return domain == settings.institutional_email_domain.lower()
+   def accepts(self, email: str) -> bool:
+    domain = email.rsplit("@", 1)[-1].strip().lower()
+    institutional_domain = settings.institutional_email_domain.strip().lower()
+
+    return (
+        domain == institutional_domain
+        or domain.endswith(f".{institutional_domain}")
+    )
 
 
 institutional_verifier = InstitutionalEmailVerificationPrototype()
